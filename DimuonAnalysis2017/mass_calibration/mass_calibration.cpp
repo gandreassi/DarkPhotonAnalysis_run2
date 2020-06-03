@@ -71,14 +71,13 @@ void mass_calibration(){
   //INPUT FILE WITH HISTOGRAMS
   	TFile* file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/mergedHists_three.root");
 
-
-	std::vector<string> hist_names; //map resonance name to histogram number
-	hist_names.push_back("Omega");
-	hist_names.push_back("Phi");
-	hist_names.push_back("JPsiPsi");
-	hist_names.push_back("Upsilon");
 	std::map<string, RooDataHist*> hist_map; //map resonance name to RooDataHist
 	std::map<string, RooAddPdf*> pdf_map; //map resonance name to pdf
+
+	std::map<string, vector<float>> hist_ranges; 
+	hist_ranges["OmegaPhi"] = {{0.65, 1.3}};
+	hist_ranges["JPsiPsi"] =  {{2.7, 4.}};
+	hist_ranges["Upsilon"] =  {{8.5 ,11}};
 
 	std::vector <float> mass, massError, width, widthError;
 	std::vector <string> resonances;
@@ -94,17 +93,15 @@ void mass_calibration(){
 	RooWorkspace *w = pdfs.w;
 
    //LOOP OVER MASS INDICES AND MAKE THE CARDS/WORKSPACES
+	TH1F* histo=(TH1F*)file->Get("massforLimitFull");
 
 	RooArgSet chi2s;
-	for (const auto &name : hist_names){
+	for (const auto &name_range : hist_ranges){
+		string name = name_range.first;
 	  	//get the histograms
-	  	TH1F* histo=(TH1F*)file->Get(Form("massforLimit%s", name.c_str()));
-	  	//histo=(TH1F*)histo->Rebin(10);//reduce number of bins
 
-	  	float xmin = histo->GetXaxis()->GetXmin();
-	  	float xmax = histo->GetXaxis()->GetXmax();
-
-	  	TH1F* histo;
+	  	float xmin = name_range.second[0];
+	  	float xmax = name_range.second[1];
 	  	if (name.compare("JPsiPsi") == 0) xmax = 4.;
 
 	  	string name_lower = name;
@@ -129,9 +126,10 @@ void mass_calibration(){
 		m.hesse();
 		Ares = m.save();
 		cout<<"$$$$"<<Ares->covQual()<<endl;
-	//}	
+	// }	
 
-	for (const auto &name : hist_names){
+	for (const auto &name_range : hist_ranges){
+		string name = name_range.first;
 	  	string name_lower = name;
 	  	std::for_each(name_lower.begin(), name_lower.end(), [](char & c) {c = ::tolower(c);});
 
@@ -157,8 +155,8 @@ void mass_calibration(){
 		//fill graph
 		mass.push_back(w->var(("M_"+reso).c_str())->getVal());
 		massError.push_back(w->var(("M_"+reso).c_str())->getError());
-		width.push_back(w->var(("res_"+reso+"_rel").c_str())->getVal());
-		widthError.push_back(w->var(("res_"+reso+"_rel").c_str())->getError());
+		width.push_back(w->var(("res_rel_"+reso).c_str())->getVal());
+		widthError.push_back(w->var(("res_rel_"+reso).c_str())->getError());
 	}
 
 
@@ -168,6 +166,7 @@ void mass_calibration(){
 	c1->GetFrame()->SetBorderSize(12);
 	const Int_t n = resonances.size();
 	TGraphErrors* gr = new TGraphErrors(n,&mass[0],&width[0],&massError[0],&widthError[0]);
+	gr->SetName("resos");
 	gr->SetTitle("Relative resonance width vs mass");
 	gr->SetMarkerColor(4);
 	gr->SetMarkerStyle(21);
