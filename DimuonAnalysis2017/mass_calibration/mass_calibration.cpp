@@ -6,7 +6,7 @@
 #include <cstring>
 #include <fstream>
 #include <cstdlib>
-#include "TH1D.h"
+#include "TH1F.h"
 #include "TH2D.h"
 #include <THStack.h>
 #include "TProfile.h"
@@ -18,6 +18,7 @@
 #include "TStyle.h"
 #include "TFractionFitter.h"
 #include <string>
+#include <cctype>
 #include <vector>
 #include <math.h>
 #include <TLatex.h>
@@ -68,15 +69,14 @@ void mass_calibration(){
   //WHICH YEAR
   	TString year="2017";
   //INPUT FILE WITH HISTOGRAMS
-  	TFile* file=TFile::Open("root://eoscms.cern.ch//eos/cms/store/group/phys_exotica/darkPhoton/jakob/2017/ScoutingRunD/ScoutingCaloMuon/crab_20181212_141716/181212_131724/0000/mergedHists_two.root");
+  	TFile* file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/mergedHists_three.root");
 
 
-	std::map<string,int> resonance_hist_IDs; //map resonance name to histogram number
-	resonance_hist_IDs["omega"] = 136;
-	resonance_hist_IDs["phi"] = 163;
-	resonance_hist_IDs["jpsi"] = 274;
-	resonance_hist_IDs["psi2s"] = 293;
-	resonance_hist_IDs["upsilon"] = 390;
+	std::vector<string> hist_names; //map resonance name to histogram number
+	hist_names.push_back("Omega");
+	hist_names.push_back("Phi");
+	hist_names.push_back("JPsiPsi");
+	hist_names.push_back("Upsilon");
 	std::map<string, RooDataHist*> hist_map; //map resonance name to RooDataHist
 	std::map<string, RooAddPdf*> pdf_map; //map resonance name to pdf
 
@@ -96,25 +96,26 @@ void mass_calibration(){
    //LOOP OVER MASS INDICES AND MAKE THE CARDS/WORKSPACES
 
 	RooArgSet chi2s;
-	for (const auto &name_ID : resonance_hist_IDs ){
+	for (const auto &name : hist_names){
 	  	//get the histograms
-	  	TH1D* catA=(TH1D*)file->Get(Form("massforLimit_CatA%d", name_ID.second));
-	  	TH1D* catB=(TH1D*)file->Get(Form("massforLimit_CatB%d", name_ID.second));
-	  	TH1D* catC=(TH1D*)file->Get(Form("massforLimit_CatC%d", name_ID.second));
+	  	TH1F* histo=(TH1F*)file->Get(Form("massforLimit%s", name.c_str()));
+	  	//histo=(TH1F*)histo->Rebin(10);//reduce number of bins
 
-	  	//we're using only one category, so we sum all histos
-	  	catA->Add(catB);
-	  	catA->Add(catC);
-	  	delete catB;
-	  	delete catC;
+	  	float xmin = histo->GetXaxis()->GetXmin();
+	  	float xmax = histo->GetXaxis()->GetXmax();
 
-	  	RooRealVar* m2mu = w->var(("m2mu_"+name_ID.first).c_str());
-	  	m2mu->setRange(catA->GetXaxis()->GetXmin(),catA->GetXaxis()->GetXmax());
-	  	RooDataHist* rdh = new RooDataHist(("rdh_"+name_ID.first).c_str(), ("rdh_"+name_ID.first).c_str(), RooArgSet(*m2mu), catA);
-	  	RooAddPdf* model = (RooAddPdf*) w->pdf(("model_"+name_ID.first).c_str());
-	  	hist_map[name_ID.first] = rdh;
-	  	pdf_map[name_ID.first] = model;
-	  	RooAbsReal* chi2 = model->createChi2(*rdh, RooFit::Range(("fitRange_"+name_ID.first).c_str()));
+	  	TH1F* histo;
+	  	if (name.compare("JPsiPsi") == 0) xmax = 4.;
+
+	  	string name_lower = name;
+	  	std::for_each(name_lower.begin(), name_lower.end(), [](char & c) {c = ::tolower(c);});
+	  	RooRealVar* m2mu = w->var(("m2mu_"+name_lower).c_str());
+	  	m2mu->setRange(xmin, xmax);
+	  	RooDataHist* rdh = new RooDataHist(("rdh_"+name_lower).c_str(), ("rdh_"+name_lower).c_str(), RooArgSet(*m2mu), histo);
+	  	RooAddPdf* model = (RooAddPdf*) w->pdf(("model_"+name_lower).c_str());
+	  	hist_map[name_lower] = rdh;
+	  	pdf_map[name_lower] = model;
+	  	RooAbsReal* chi2 = model->createChi2(*rdh, RooFit::Range(("fitRange_"+name_lower).c_str()));
 	  	chi2s.add(*chi2);
 	 }
 
@@ -130,22 +131,26 @@ void mass_calibration(){
 		cout<<"$$$$"<<Ares->covQual()<<endl;
 	//}	
 
-	for (const auto &name_ID : resonance_hist_IDs ){
-		RooPlot *frame = w->var(("m2mu_"+name_ID.first).c_str())->frame(RooFit::Range(("fitRange_"+name_ID.first).c_str()));
-		hist_map[name_ID.first]->plotOn(frame);
-		TIterator* pdfIter = pdf_map[name_ID.first]->pdfList().createIterator();
+	for (const auto &name : hist_names){
+	  	string name_lower = name;
+	  	std::for_each(name_lower.begin(), name_lower.end(), [](char & c) {c = ::tolower(c);});
+
+	  	RooPlot *frame = w->var(("m2mu_"+name_lower).c_str())->frame(RooFit::Range(("fitRange_"+name_lower).c_str()));
+		hist_map[name_lower]->plotOn(frame);
+		TIterator* pdfIter = pdf_map[name_lower]->pdfList().createIterator();
 		RooAbsPdf* signal = (RooAbsPdf*)pdfIter->Next();
 		while (signal){
-			pdf_map[name_ID.first]->plotOn(frame, RooFit::NormRange(("fitRange_"+name_ID.first).c_str()), RooFit::Components(signal->GetName()), RooFit::LineColor(kGreen));
+			pdf_map[name_lower]->plotOn(frame, RooFit::NormRange(("fitRange_"+name_lower).c_str()), RooFit::Components(signal->GetName()), RooFit::LineColor(kGreen));
 			signal = (RooAbsPdf*)pdfIter->Next();
 		}
-		pdf_map[name_ID.first]->plotOn(frame, RooFit::NormRange(("fitRange_"+name_ID.first).c_str()), RooFit::Components(("bkgModel_"+name_ID.first).c_str()), RooFit::LineColor(kRed));
-		pdf_map[name_ID.first]->plotOn(frame, RooFit::NormRange(("fitRange_"+name_ID.first).c_str()));
+		pdf_map[name_lower]->plotOn(frame, RooFit::NormRange(("fitRange_"+name_lower).c_str()), RooFit::Components(("bkgModel_"+name_lower).c_str()), RooFit::LineColor(kRed));
+		pdf_map[name_lower]->plotOn(frame, RooFit::NormRange(("fitRange_"+name_lower).c_str()));
 		TCanvas c_all("c_all", "c_all", 800, 500);
 		frame->Draw("goff");
 		frame->SetTitle("");
 		frame->GetXaxis()->SetTitle("dimuon mass [GeV]");
-		c_all.SaveAs(("plots/"+name_ID.first+(string)year+".png").c_str());
+		c_all.SaveAs(("plots/"+name_lower+(string)year+".png").c_str());
+		c_all.SaveAs(("plots/"+name_lower+(string)year+".pdf").c_str());
 	} 
 
 	for (auto reso : resonances){
@@ -157,16 +162,20 @@ void mass_calibration(){
 	}
 
 
-TCanvas* c1 = new TCanvas("c1","c1",200,10,700,500);
-   c1->SetGrid();
-   c1->GetFrame()->SetFillColor(21);
-   c1->GetFrame()->SetBorderSize(12);
-   const Int_t n = resonances.size();
-   TGraphErrors* gr = new TGraphErrors(n,&mass[0],&width[0],&massError[0],&widthError[0]);
-   gr->SetTitle("Relative resonance width vs mass");
-   gr->SetMarkerColor(4);
-   gr->SetMarkerStyle(21);
-   gr->GetYaxis()->SetRangeUser(0,0.05);
-   gr->Draw("AP");
-   c1->SaveAs(("plots/graph"+(string)year+".png").c_str());
+	TCanvas* c1 = new TCanvas("c1","c1",200,10,700,500);
+	c1->SetGrid();
+	c1->GetFrame()->SetFillColor(21);
+	c1->GetFrame()->SetBorderSize(12);
+	const Int_t n = resonances.size();
+	TGraphErrors* gr = new TGraphErrors(n,&mass[0],&width[0],&massError[0],&widthError[0]);
+	gr->SetTitle("Relative resonance width vs mass");
+	gr->SetMarkerColor(4);
+	gr->SetMarkerStyle(21);
+	gr->GetYaxis()->SetRangeUser(0,0.05);
+	gr->Draw("AP");
+	c1->SaveAs(("plots/graph"+(string)year+".png").c_str());
+
+	TFile *outf = new TFile("mass_resolutions.root", "RECREATE");
+	gr->Write();
+	outf->Close();
 }
