@@ -16,64 +16,40 @@
 #include "RooRealProxy.h"
 
 class RooRealVar;
-
 class RooAbsReal;
 
-
  
-class RooDoubleCB : public RooAbsPdf 
-{
-  
+class RooDoubleCB : public RooAbsPdf {
  public:
   RooDoubleCB();
-  
   RooDoubleCB(const char *name, const char *title,
-              RooAbsReal& _x,
-              RooAbsReal& _mean,
-              RooAbsReal& _width,
-              RooAbsReal& _alpha1,
-              RooAbsReal& _n1,
-              RooAbsReal& _alpha2,
-                    RooAbsReal& _n2
-              );
-  
+	      RooAbsReal& _x,
+	      RooAbsReal& _mean,
+	      RooAbsReal& _width,
+	      RooAbsReal& _alpha1,
+	      RooAbsReal& _n1,
+	      RooAbsReal& _alpha2,
+	            RooAbsReal& _n2
+	      );
   RooDoubleCB(const RooDoubleCB& other, const char* name=0) ;
-  
-  virtual TObject* clone(const char* newname) const 
-  {
-    return new RooDoubleCB(*this,newname);
-  }
-  
-  inline virtual ~RooDoubleCB() 
-  {
-  }
-  
+  virtual TObject* clone(const char* newname) const { return new RooDoubleCB(*this,newname); }
+  inline virtual ~RooDoubleCB() { }
 
  protected:
 
   RooRealProxy x ;
-  
   RooRealProxy mean;
-  
   RooRealProxy width;
-  
   RooRealProxy alpha1;
-  
   RooRealProxy n1;
-  
   RooRealProxy alpha2;
-  
   RooRealProxy n2;
   
-  
   Double_t evaluate() const ;
-  
 
-  //private:
+ private:
 
-  //ClassDef(RooDoubleCB,1) // Your description goes here...
-}
-;
-
+  ClassDef(RooDoubleCB,1) // Your description goes here...
+    };
  
 #endif

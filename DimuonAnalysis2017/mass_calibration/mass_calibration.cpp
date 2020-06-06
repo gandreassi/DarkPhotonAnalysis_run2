@@ -57,14 +57,12 @@
 #include <RooAddition.h> 
 #include <RooMinuit.h> 
 #include <RooFitResult.h> 
+#include <TROOT.h> 
 #include "pdfs.h"
 
 using namespace std;
 
-void mass_calibration(){
-
-  //gROOT->ProcessLine(".L ../RooFit-pdfs/CB.cc+");
- 
+void mass_calibration(){ 
 
   //WHICH YEAR
   	TString year="2017";
@@ -107,6 +105,7 @@ void mass_calibration(){
 	  	string name_lower = name;
 	  	std::for_each(name_lower.begin(), name_lower.end(), [](char & c) {c = ::tolower(c);});
 	  	RooRealVar* m2mu = w->var(("m2mu_"+name_lower).c_str());
+	  	cout<<name_lower<<m2mu<<endl;
 	  	m2mu->setRange(xmin, xmax);
 	  	RooDataHist* rdh = new RooDataHist(("rdh_"+name_lower).c_str(), ("rdh_"+name_lower).c_str(), RooArgSet(*m2mu), histo);
 	  	RooAddPdf* model = (RooAddPdf*) w->pdf(("model_"+name_lower).c_str());
@@ -128,6 +127,10 @@ void mass_calibration(){
 		cout<<"$$$$"<<Ares->covQual()<<endl;
 	// }	
 
+	pdfs.freeze();
+	pdfs.saveAfterCalibration("pdfs.root");
+
+
 	for (const auto &name_range : hist_ranges){
 		string name = name_range.first;
 	  	string name_lower = name;
@@ -136,10 +139,10 @@ void mass_calibration(){
 	  	RooPlot *frame = w->var(("m2mu_"+name_lower).c_str())->frame(RooFit::Range(("fitRange_"+name_lower).c_str()));
 		hist_map[name_lower]->plotOn(frame);
 		TIterator* pdfIter = pdf_map[name_lower]->pdfList().createIterator();
-		RooAbsPdf* signal = (RooAbsPdf*)pdfIter->Next();
+		RooAddPdf* signal = (RooAddPdf*)pdfIter->Next();
 		while (signal){
 			pdf_map[name_lower]->plotOn(frame, RooFit::NormRange(("fitRange_"+name_lower).c_str()), RooFit::Components(signal->GetName()), RooFit::LineColor(kGreen));
-			signal = (RooAbsPdf*)pdfIter->Next();
+			signal = (RooAddPdf*)pdfIter->Next();
 		}
 		pdf_map[name_lower]->plotOn(frame, RooFit::NormRange(("fitRange_"+name_lower).c_str()), RooFit::Components(("bkgModel_"+name_lower).c_str()), RooFit::LineColor(kRed));
 		pdf_map[name_lower]->plotOn(frame, RooFit::NormRange(("fitRange_"+name_lower).c_str()));
@@ -177,4 +180,6 @@ void mass_calibration(){
 	TFile *outf = new TFile("mass_resolutions.root", "RECREATE");
 	gr->Write();
 	outf->Close();
+
+
 }

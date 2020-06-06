@@ -1,89 +1,22 @@
-#include <iostream>
-#include <TLegend.h>
-#include <sstream>
-#include <string>
-#include <cstring>
-#include <fstream>
-#include <cstdlib>
-#include "TH1D.h"
-#include "TH2D.h"
-#include <THStack.h>
-#include "TProfile.h"
-#include "TGraph.h"
-#include "TFile.h"
-#include "TTree.h"
-#include "TF1.h"
-#include "TCanvas.h"
-#include "TStyle.h"
-#include "TFractionFitter.h"
-#include <string>
-#include <vector>
-#include <math.h>
-#include <TLatex.h>
-#include <TLine.h>
-#include <TMarker.h>
-#include <TPave.h>
-#include <TPaveStats.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <TString.h>
-#include "TGraphErrors.h"
-#include "TF1.h"
-#include "TEfficiency.h"
 
-
-#include <vector>
-#include <map>
-#include <utility>
-#include <algorithm>
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <valarray>
-
-
-
-
-#include <RooPlot.h>
-#include <RooArgSet.h>
-#include <RooArgList.h>
-#include <RooDataSet.h>
-#include <RooDataHist.h>
-#include <RooGaussian.h>
-#include <RooPolynomial.h>
-#include <RooBernstein.h>
-#include <RooRealVar.h> 
-#include <RooFormulaVar.h> 
-#include <RooWorkspace.h> 
-#include <RooMsgService.h> 
-#include "DSCB.h"
-
-
+#include "pdfs.h"
 using namespace std;
 
 
-
-class reso_pdfs {
-	public:
-
-		RooWorkspace* w;
-		//// common params
-		RooRealVar* alpha1;
-		RooRealVar* alpha2;
-		RooRealVar* n1;
-		//RooRealVar* n2;
-		RooRealVar* frac_gau;
-		RooRealVar* gau_reso_scale;
-		//////
-
-		~reso_pdfs(){
+		reso_pdfs::~reso_pdfs(){
 			w->Delete();
-		}
+		};
 
-		reso_pdfs(){
-			w = new RooWorkspace("dpworkspace", "");
-			// mass
+		reso_pdfs::reso_pdfs(){
+
+			//gROOT->ProcessLine("RooDoubleCB.cc+");
+			//f_ws = TFile::Open("pdfs.root", "UPDATE");
+			//w = (RooWorkspace*)f_ws->Get("dpworkspace");
+			w = new RooWorkspace("dpworkspace", "dpworkspace");
+			//w->addClassDeclImportDir("../RooFit-pdfs/include/");
+			//w->addClassImplImportDir("../RooFit-pdfs/src/");
+			w->importClassCode(RooDoubleCB::Class(),kTRUE);
+
 			
 			//// common params
 			alpha1 = new RooRealVar("alpha1"  	, "alpha1 " 	, 1.,0.,2.5);
@@ -95,11 +28,10 @@ class reso_pdfs {
 			//////
 
 
-
 			///// define all pdfs
 			RooRealVar* m2mu_omegaphi = new RooRealVar("m2mu_omegaphi"  	, "m2mu_omegaphi" 	, 0,15);
-			RooAddPdf* signalModel_omega = make_signal_model("omega", m2mu_omegaphi, 0.782, 0.77, 0.795);
-			RooAddPdf* signalModel_phi = make_signal_model("phi", m2mu_omegaphi, 1.02, 0.95, 1.1);
+			RooAddPdf* signalModel_omega = reso_pdfs::make_signal_model("omega", m2mu_omegaphi, 0.782, 0.77, 0.795);
+			RooAddPdf* signalModel_phi = reso_pdfs::make_signal_model("phi", m2mu_omegaphi, 1.02, 0.95, 1.1);
 
 			RooRealVar sig_fraction_omega("sig_fraction_omega", "",0.2,0.02,0.8);
 			RooRealVar sig_fraction_phi("sig_fraction_phi", "",0.2,0.02,0.8);
@@ -118,8 +50,8 @@ class reso_pdfs {
 			//////////
 
 			RooRealVar* m2mu_jpsipsi = new RooRealVar("m2mu_jpsipsi"  	, "m2mu_jpsipsi" 	, 0,15);
-			RooAddPdf* signalModel_jpsi = make_signal_model("jpsi", m2mu_jpsipsi, 3.1, 3.0, 3.2);
-			RooAddPdf* signalModel_psi2s = make_signal_model("psi2s", m2mu_jpsipsi, 3.65, 3.6, 3.8);
+			RooAddPdf* signalModel_jpsi = reso_pdfs::make_signal_model("jpsi", m2mu_jpsipsi, 3.1, 3.0, 3.2);
+			RooAddPdf* signalModel_psi2s = reso_pdfs::make_signal_model("psi2s", m2mu_jpsipsi, 3.65, 3.6, 3.8);
 
 			RooRealVar sig_fraction_jpsi("sig_fraction_jpsi", "",0.3,0.1,0.9);
 			RooRealVar sig_fraction_psi2s("sig_fraction_psi2s", "",0.1,0.02,0.5);
@@ -139,9 +71,9 @@ class reso_pdfs {
 			//////////
 
 			RooRealVar* m2mu_upsilon = new RooRealVar("m2mu_upsilon"  	, "m2mu_upsilon" 	, 0,15);
-			RooAddPdf* signalModel_upsilon1s = make_signal_model("upsilon1s", m2mu_upsilon, 9.46, 9.36, 9.56);
-			RooAddPdf* signalModel_upsilon2s = make_signal_model("upsilon2s", m2mu_upsilon, 10.05, 9.95, 10.1);
-			RooAddPdf* signalModel_upsilon3s = make_signal_model("upsilon3s", m2mu_upsilon, 10.3, 10.25, 10.4);
+			RooAddPdf* signalModel_upsilon1s = reso_pdfs::make_signal_model("upsilon1s", m2mu_upsilon, 9.46, 9.36, 9.56);
+			RooAddPdf* signalModel_upsilon2s = reso_pdfs::make_signal_model("upsilon2s", m2mu_upsilon, 10.05, 9.95, 10.1);
+			RooAddPdf* signalModel_upsilon3s = reso_pdfs::make_signal_model("upsilon3s", m2mu_upsilon, 10.3, 10.25, 10.4);
 
 			RooRealVar sig_fraction_upsilon1s("sig_fraction_upsilon1s", "",0.2,0.02,0.8);
 			RooRealVar sig_fraction_upsilon2s("sig_fraction_upsilon2s", "",0.2,0.02,0.8);
@@ -158,9 +90,15 @@ class reso_pdfs {
 			RooAddPdf model_upsilon("model_upsilon", "model_upsilon", RooArgList(*signalModel_upsilon1s, *signalModel_upsilon2s, *signalModel_upsilon3s, bkgModel_upsilon), RooArgList(sig_fraction_upsilon1s, sig_fraction_upsilon2s, sig_fraction_upsilon3s));
 			w->import(model_upsilon);
 
+
+			// add another signal pdf, which will not participate in the fit but will serve as base pdf for the limit
+			RooRealVar* m2mu = new RooRealVar("m2mu"  	, "m2mu" 	, 0,15);
+			RooAddPdf* generic_signal_model = reso_pdfs::make_signal_model("generic", m2mu, 5, 0, 15);
+			w->import(*generic_signal_model);
+
 		};
 
-		RooAddPdf* make_signal_model(string name, RooRealVar* mass, double m_init, double m_min, double m_max){
+		RooAddPdf* reso_pdfs::make_signal_model(string name, RooRealVar* mass, double m_init, double m_min, double m_max){
 			RooRealVar* M = new RooRealVar(("M_"+name).c_str()      , ("M_"+name).c_str()          , m_init, m_min, m_max);
 			RooRealVar* res_rel = new RooRealVar(("res_rel_"+name).c_str(), ("res_rel_"+name).c_str(), 0.01, 0.005, 0.1);
 			RooFormulaVar* res_CB = new RooFormulaVar(("res_CB_"+name).c_str(), ("M_"+name+"*res_rel_"+name).c_str() , RooArgList(*M, *res_rel));
@@ -171,6 +109,23 @@ class reso_pdfs {
 			return signalModel;
 		};
 
-};
+		void reso_pdfs::freeze(){
+			alpha1->setConstant(kTRUE);
+			alpha2->setConstant(kTRUE);
+			n1->setConstant(kTRUE);
+			//n2->setConstant(kTRUE);
+			frac_gau->setConstant(kTRUE);
+			gau_reso_scale->setConstant(kTRUE);
+		};
+
+		void reso_pdfs::saveAfterCalibration(const char* fname){
+			TFile* f_ws = TFile::Open(fname,"RECREATE");
+			w->saveSnapshot("calibrated", w->allVars());
+			w->Write();
+			w->Print();
+			f_ws->Close();
+		};
+
+
 
 

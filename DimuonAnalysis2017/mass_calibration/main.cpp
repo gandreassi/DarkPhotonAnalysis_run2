@@ -1,4 +1,6 @@
-#include "mass_calibration.cpp"
+//#include "mass_calibration.cpp"
+
+void mass_calibration();
 
 int main (int argc, char *argv[]) {
   
