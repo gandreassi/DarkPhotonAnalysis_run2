@@ -9,12 +9,9 @@ using namespace std;
 
 		reso_pdfs::reso_pdfs(){
 
-			//gROOT->ProcessLine("RooDoubleCB.cc+");
-			//f_ws = TFile::Open("pdfs.root", "UPDATE");
-			//w = (RooWorkspace*)f_ws->Get("dpworkspace");
 			w = new RooWorkspace("dpworkspace", "dpworkspace");
-			//w->addClassDeclImportDir("../RooFit-pdfs/include/");
-			//w->addClassImplImportDir("../RooFit-pdfs/src/");
+			w->addClassDeclImportDir("../RooFit-pdfs/");
+			w->addClassImplImportDir("../RooFit-pdfs/");
 			w->importClassCode(RooDoubleCB::Class(),kTRUE);
 
 			
