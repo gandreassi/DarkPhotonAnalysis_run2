@@ -62,12 +62,12 @@
 
 using namespace std;
 
-void mass_calibration(){ 
+void mass_calibration(TString year="2017"){ 
 
-  //WHICH YEAR
-  	TString year="2017";
   //INPUT FILE WITH HISTOGRAMS
-  	TFile* file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/mergedHists_three.root");
+  	TFile* file;
+  	if (year.CompareTo("2017")) file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/mergedHists_three.root");
+  	else if (year.CompareTo("2018")) file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/2018/mergedHistos_v1.root");
 
 	std::map<string, RooDataHist*> hist_map; //map resonance name to RooDataHist
 	std::map<string, RooAddPdf*> pdf_map; //map resonance name to pdf
@@ -177,7 +177,7 @@ void mass_calibration(){
 	gr->Draw("AP");
 	c1->SaveAs(("plots/graph"+(string)year+".png").c_str());
 
-	TFile *outf = new TFile("mass_resolutions.root", "RECREATE");
+	TFile *outf = new TFile(("mass_resolutions"+(string)year+".root").c_str(), "RECREATE");
 	gr->Write();
 	outf->Close();
 

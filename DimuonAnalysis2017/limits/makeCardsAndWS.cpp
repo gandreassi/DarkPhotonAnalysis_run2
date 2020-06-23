@@ -27,7 +27,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <TString.h>
-#include "TGraphErrors.h"
+#include <TGraphErrors.h>
+#include <TGraphAsymmErrors.h>
 #include "TF1.h"
 #include "TEfficiency.h"
 
@@ -63,7 +64,7 @@
 
 using namespace std;
 
-void makeCardsAndWS(){
+void makeCardsAndWS(TString year="2017"){
   
 
   TH1F* histChi2_A=new TH1F("histChi2_A","histChi2_A",50,0.5,1.5);
@@ -73,7 +74,9 @@ void makeCardsAndWS(){
   	TString year="2017";
 	TString suff="IterV3";
   //INPUT FILE WITH HISTOGRAMS TO FIT BACKGROUND
-  	TFile* file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/mergedHists_three.root");
+  	TFile* file;
+  	if (year.CompareTo("2017")) file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/mergedHists_three.root");
+  	else if (year.CompareTo("2018")) file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/2018/mergedHistos_v1.root");
 
   //PREPARE EXPECTED NUMBER OF SIGNAL EVENTS PER CATEGORY
 	//X-SECTION GRAPH
@@ -97,21 +100,27 @@ void makeCardsAndWS(){
 	TGraph* accgraph 	= new TGraph(nbins_acc,m_acceptances,acceptances);
 
 	//LUMINOSITY
-	double luminosity = 4000.;//pb-1
+	double luminosity = 6600.;//4000.;//pb-1
 
 	//EFFICIENCY
 	//get acceptance from hist
-	TFile* eff_file = TFile::Open("efficiency.root");
-	TH1F* eff_hist = (TH1F*)eff_file->Get("massSel");
-	int nbins_eff=eff_hist->GetNbinsX();
-	double effA[nbins_eff];
-	double m_effA[nbins_eff];
-	for (int j=1; j<=nbins_eff; j++){
-		effA[j-1] = eff_hist->GetBinContent(j);
-		m_effA[j-1] = eff_hist->GetBinCenter(j);
-	}
-	TGraph* effgraph 	= new TGraph(nbins_eff,m_effA,effA);
-	
+	TFile* eff_file = TFile::Open("l1_corrCuts_eff_Data_newAllTrigLowMass_2018_mll.root");
+	TEfficiency *teff = ((TEfficiency*)eff_file->Get("l1_corrCuts_eff_Data_newAllTrigLowMass"));
+	cout<<teff<<endl;
+	teff->Draw();
+	teff->Paint("");
+	TGraphAsymmErrors* effgraph = teff->GetPaintedGraph();
+		cout<<effgraph<<endl;
+
+	// int nbins_eff=eff_hist->GetNbinsX();
+	// double effA[nbins_eff];
+	// double m_effA[nbins_eff];
+	// for (int j=1; j<=nbins_eff; j++){
+	// 	effA[j-1] = eff_hist->GetBinContent(j);
+	// 	m_effA[j-1] = eff_hist->GetBinCenter(j);
+	// }
+	// TGraph* effgraph 	= new TGraph(nbins_eff,m_effA,effA);
+	double effcuts = 0.64; //from http://cms.cern.ch/iCMS/jsp/db_notes/noteInfo.jsp?cmsnoteid=CMS%20AN-2017/329 
 
 	effgraph->SaveAs("output/effgraph.root");
 	accgraph->SaveAs("output/accgraph.root");
@@ -119,14 +128,14 @@ void makeCardsAndWS(){
 
 	
 	//scale
-	double eps2scale = 1; //this scales eps 0.02 -> 
+	double eps2scale = 0.1;//0.002; //this scales eps 0.02 -> 
 
 	//*****----->>>>> nSignal = xsecgraph->Eval(mass)*eff*luminosity*acceptances[i]
 
 	//define unfittable ranges
 	//float unfittable_mins[9] = {0,    0.28, 0.5,   0.7,   0.95, 2.75,  3.55,  8.9};
 
-	double unfittable_regions[8][2] = {{0,0.22}, {0.5,0.575}, {0.7,0.85}, {0.95,1.05}, {2.9,3.1}, {3.4,3.8}, {9.1,10.}};
+	double unfittable_regions[8][2] = {{0,0.22}, {0.53,0.575}, {0.74,0.85}, {0.97,1.07}, {2.8,3.85}, {9.0,11}};
 
    //LOOP OVER MASS INDICES AND MAKE THE CARDS/WORKSPACES
 	double mass = -1.;
@@ -140,6 +149,8 @@ void makeCardsAndWS(){
 	w->var("gau_reso_scale")->setConstant(true);
 
 	w->Print();
+
+	double rel_reso=0.013;//temporary
 
 	for(int i=0; i<400; i++){
 	  	//get the histograms
@@ -159,37 +170,49 @@ void makeCardsAndWS(){
 	  
 
 		//compute mass point and define ROOFit variables
-	  	mass = 0.5*(massLow+massHigh);
 	  	bool dontfit=false;
 
 	  	//reduce the mass bin width to avoid being inside the forbidden regions (resonances)
+	  	// for (auto fbin : unfittable_regions){
+	  	// 	if ((massLow>fbin[0] && massHigh<fbin[1]) || (massLow<fbin[0] && massHigh>fbin[1])) dontfit=true; //the current bin is completely inside a forbidden region, or viceversa
+	  	// 	else if ((massHigh-fbin[0])*(massHigh-fbin[1])<=0){ //high edge of our bin is in a forbidden region
+	  	// 		massHigh = fbin[0];
+	  	// 	}
+	  	// 	else if ((massLow-fbin[0])*(massLow-fbin[1])<=0){ //low edge of our bin is in a forbidden region
+	  	// 		massLow = fbin[1];
+	  	// 	}
+	  	// 	if ((massHigh-massLow)<0.2*massBinWidth) dontfit=true; //skip if the mass bin after this reduction is too small (or negative, which would mean the original mass bin was all inside a forbidden region)
+	  	// }
+	  	// if (dontfit) continue;
+
+	  	mass = 0.5*(massLow+massHigh);
 	  	for (auto fbin : unfittable_regions){
-	  		if (massLow>fbin[0] && massHigh<fbin[1]) dontfit=true; //the current bin is completely inside a forbidden region
-	  		if ((massHigh-fbin[0])*(massHigh-fbin[1])<=0){ //high edge of our bin is in a forbidden region
+	  		if ((mass>fbin[0] && mass<fbin[1])) dontfit=true; //the current point is inside a forbidden region
+	  		else if ((massHigh-fbin[0])*(massHigh-fbin[1])<=0){ //high edge of our bin is in a forbidden region
 	  			massHigh = fbin[0];
+	  			massLow = massHigh-massBinWidth;
 	  		}
-	  		if ((massLow-fbin[0])*(massLow-fbin[1])<=0){ //low edge of our bin is in a forbidden region
+	  		else if ((massLow-fbin[0])*(massLow-fbin[1])<=0){ //low edge of our bin is in a forbidden region
 	  			massLow = fbin[1];
+	  			massHigh = massLow+massBinWidth;
 	  		}
-	  		if ((massLow<fbin[0]) && (massHigh>fbin[1])) dontfit=true; //this means that the unfittable region is right within our bin. In this case there's nothing to do.
-	  		if ((massHigh-massLow)<0.2*massBinWidth) dontfit=true; //skip if the mass bin after this reduction is too small (or negative, which would mean the original mass bin was all inside a forbidden region)
+	  		if ((mass-massLow)<4*rel_reso*mass || (massHigh-mass)<4*rel_reso*mass) dontfit=true; //too close to the bin edge
 	  	}
 	  	if (dontfit) continue;
-
 
 
 		//cout<<"Spline: "<<effAgraph->Eval(mass,0,"S")<<endl;
 		//cout<<"Graph : "<<effAgraph->Eval(mass)<<endl;
 		RooRealVar* m2mu = w->var("m2mu");
-		m2mu->setMin(massLow);
 		m2mu->setMax(massHigh);
+		m2mu->setMin(massLow);
 
 		RooAddPdf* signalModel = (RooAddPdf*)w->pdf("signalModel_generic");
 
 		//define the signal model
 		w->var("M_generic")->setVal(mass);
 		w->var("M_generic")->setConstant(true);
-		w->var("res_rel_generic")->setVal(0.013);
+		w->var("res_rel_generic")->setVal(rel_reso);
 		w->var("res_rel_generic")->setConstant(true);
 		//in pdf.h aggiungi una pdf generica e salvala nel workspace con tutti i param già fissati. poi riprendila da qui, e usa dirett
 		// la sua variabile massa osservabile come massa qui, semplicemente cambiandogli il range.
@@ -223,7 +246,7 @@ void makeCardsAndWS(){
 
 		//write the datacard
 		char inputShape[200];
-		sprintf(inputShape,"output/dpCard_"+year+suff+"_%d.txt",i);
+		sprintf(inputShape,"output/dpCard_"+year+suff+"_m%.3f_%d.txt",mass,i);
 		ofstream newcardShape;
 		newcardShape.open(inputShape);
 		newcardShape << Form("imax * number of channels\n");
@@ -231,15 +254,15 @@ void makeCardsAndWS(){
 		newcardShape << Form("kmax * number of nuisance parameters\n");
 		newcardShape << Form("shapes data_obs	CatAB dpWorkspace"+year+suff+"_%d.root dpworkspace:data_obs\n",i);
 		newcardShape << Form("shapes bkg_mass	CatAB dpWorkspace"+year+suff+"_%d.root dpworkspace:bkg_model\n",i);
-		newcardShape << Form("shapes signalModel_generic	CatAB dpWorkspace"+year+suff+"_%d.root dpworkspace:signalModel\n",i);
+		newcardShape << Form("shapes signalModel_generic	CatAB dpWorkspace"+year+suff+"_%d.root dpworkspace:signalModel_generic\n",i);
 		newcardShape << Form("bin		CatAB\n");
 		newcardShape << Form("observation 	-1.0\n");
 		newcardShape << Form("bin     		CatAB		CatAB		\n");
 		newcardShape << Form("process 		signalModel_generic  	bkg_mass	\n");
 		newcardShape << Form("process 		0    		1	   	\n");
 		newcardShape << Form("rate    		%f  		%f		\n",
-				     eps2scale*xsecgraph->Eval(mass,0,"S")*effgraph->Eval(mass,0,"S")*luminosity*accgraph->Eval(mass,0,"S"), catA->Integral());
-		//eps2scale*xsecgraph->Eval(mass,0,"S")*effgraph->Eval(mass,0,"S")*luminosity, catA->Integral());
+				     eps2scale*effcuts*effgraph->Eval(mass,0,"S")*luminosity, catA->Integral());
+		//eps2scale*xsecgraph->Eval(mass,0,"S")*effgraph->Eval(mass,0,"S")*luminosity*accgraph->Eval(mass,0,"S"), catA->Integral());
 		newcardShape << Form("lumi13TeV_2017 lnN 	1.023 	-\n");
 		newcardShape << Form("eff_mu_13TeV_2017 lnN	1.015 	-\n");
 		//newcardShape << Form("bkg_norm rateParam CatA bkg_mass %f\n",catA->Integral());

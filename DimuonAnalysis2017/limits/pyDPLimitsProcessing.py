@@ -1,16 +1,15 @@
 import os
 import subprocess
 import commands
+import re
+from glob import glob
 
-m=0.2
-for d in range(0,400):
-	m=m+(m*0.01)
-
-	if not d%4==0: continue
-
-	#if d<90 or d>112:
-	#	continue
-        fname = "dpCard_2017IterV3_"+str(d)+".txt"
+files = glob("output/dpCard_2017IterV3_*.txt")
+for fname in files:
+	m = re.search(r"_m(\d+\.?\d+)_", fname).group(1)
+	d = re.search(r"_(\d+).txt", fname).group(1)
+	print "ID {0},  m={1}".format(d,m)
+	#if not int(d)%5==0: continue
 	if os.path.isfile(fname):
-                os.system("combine -M AsymptoticLimits "+fname+" -m "+str(m)+" -n asympMassIndex_"+str(d)+"")	
+                os.system("combine -M AsymptoticLimits "+fname+" -m "+m+" -n asympMassIndex_"+d)	
 	
