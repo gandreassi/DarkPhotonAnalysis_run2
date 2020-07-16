@@ -71,7 +71,6 @@ void makeCardsAndWS(TString year="2017"){
 
 
   //WHICH YEAR
-  	TString year="2017";
 	TString suff="IterV3";
   //INPUT FILE WITH HISTOGRAMS TO FIT BACKGROUND
   	TFile* file;
