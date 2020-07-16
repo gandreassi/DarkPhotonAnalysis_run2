@@ -1,4 +1,6 @@
-void makeCardsAndWS();
+#include <TString.h>
+
+void makeCardsAndWS(TString year);
 
 int main (int argc, char *argv[]) {
   
@@ -6,7 +8,7 @@ int main (int argc, char *argv[]) {
     return 0;
   }
 
-  makeCardsAndWS();
+  makeCardsAndWS("2017");
 
 
   return 0;
