@@ -25,5 +25,5 @@ python pyDPLimitsProcessing.py <year>
 
 4) run the plotting macro
 <pre><code>
-python makeDPLimit_Xsec_inacc.py <year>
+python makeDPLimit_Xsec.py <year>
 </code></pre>
