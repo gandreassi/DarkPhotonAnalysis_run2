@@ -9,6 +9,7 @@ int main (int argc, char *argv[]) {
   }
 
   makeCardsAndWS("2017");
+  makeCardsAndWS("2018"); //not combined yet! TODO
 
 
   return 0;
