@@ -4,12 +4,9 @@ How to produce limit plots (assuming the user already ran the mass calibration p
 <pre><code>
 cmsrel CMSSW_10_3_2
 cd CMSSW_10_3_2/src/
-cmsenv
 git clone https://github.com/cms-analysis/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
-cd HiggsAnalysis/CombinedLimit
-source env_standalone.sh 
-make -j 8
-cd ../../
+cmsenv
+scram b
 git clone git@github.com:gandreassi/DarkPhotonAnalysis_run2.git
 cd DarkPhotonAnalysis_run2/DimuonAnalysis2017/
 make
