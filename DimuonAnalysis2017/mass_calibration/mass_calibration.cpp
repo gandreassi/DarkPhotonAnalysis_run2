@@ -128,7 +128,7 @@ void mass_calibration(TString year="2017"){
 	// }	
 
 	pdfs.freeze();
-	pdfs.saveAfterCalibration("pdfs.root");
+	pdfs.saveAfterCalibration(("pdfs"+(string)year+".root").c_str());
 
 
 	for (const auto &name_range : hist_ranges){
