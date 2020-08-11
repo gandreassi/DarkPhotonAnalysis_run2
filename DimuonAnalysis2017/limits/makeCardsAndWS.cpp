@@ -67,15 +67,12 @@ using namespace std;
 void makeCardsAndWS(TString year="2017"){
   
 
-  TH1F* histChi2_A=new TH1F("histChi2_A","histChi2_A",50,0.5,1.5);
-
-
   //WHICH YEAR
 	TString suff="IterV3";
   //INPUT FILE WITH HISTOGRAMS TO FIT BACKGROUND
-  	TFile* file;
-  	if (year.CompareTo("2017")) file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/mergedHists_three.root");
-  	else if (year.CompareTo("2018")) file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/2018/mergedHistos_v1.root");
+  	TFile* file = NULL;
+  	if (year == "2017") file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/2017_ScoutingRunD_4fb.root");
+  	else if (year == "2018") file=TFile::Open("/mnt/hadoop/scratch/gandreas/DP_histos/2018_ScoutingRunC_6.6fb.root");
 
   //PREPARE EXPECTED NUMBER OF SIGNAL EVENTS PER CATEGORY
 	//X-SECTION GRAPH
@@ -88,7 +85,7 @@ void makeCardsAndWS(TString year="2017"){
 
 	//ACCEPTANCE
 	TFile* acc_file = TFile::Open("acceptances.root");
-	TEfficiency* acc_teff = (TEfficiency*)acc_file->Get("cmsacc");
+	/*TEfficiency* acc_teff = (TEfficiency*)acc_file->Get("cmsacc");
 	int nbins_acc=acc_teff->GetPassedHistogram()->GetNbinsX();
 	double acceptances[nbins_acc];
 	double m_acceptances[nbins_acc];
@@ -97,19 +94,22 @@ void makeCardsAndWS(TString year="2017"){
 		m_acceptances[j-1] = acc_teff->GetPassedHistogram()->GetBinCenter(j);
 	}
 	TGraph* accgraph 	= new TGraph(nbins_acc,m_acceptances,acceptances);
-
+	*/
+	TF1* accF = (TF1*)acc_file->Get("fit_func");
 	//LUMINOSITY
-	double luminosity = 6600.;//4000.;//pb-1
+	double luminosity = 0; //4000.;//pb-1
+	if (year == "2017") luminosity = 4000;
+	else if (year == "2018") luminosity = 6600;
 
 	//EFFICIENCY
 	//get acceptance from hist
-	TFile* eff_file = TFile::Open("l1_corrCuts_eff_Data_newAllTrigLowMass_2018_mll.root");
-	TEfficiency *teff = ((TEfficiency*)eff_file->Get("l1_corrCuts_eff_Data_newAllTrigLowMass"));
+	TFile* eff_file = TFile::Open("l1_corrCuts_eff_Data_newAllTrigLowMass_"+year+"_mll_dR_wieghted.root");
+	//TFile* eff_file = TFile::Open("l1_corrCuts_eff_Data_newAllTrigLowMass_2018_mll_dR_wieghted.root");
+	TEfficiency *teff = ((TEfficiency*)eff_file->Get("honemll_clone"));
 	cout<<teff<<endl;
 	teff->Draw();
 	teff->Paint("");
 	TGraphAsymmErrors* effgraph = teff->GetPaintedGraph();
-		cout<<effgraph<<endl;
 
 	// int nbins_eff=eff_hist->GetNbinsX();
 	// double effA[nbins_eff];
@@ -122,12 +122,12 @@ void makeCardsAndWS(TString year="2017"){
 	double effcuts = 0.64; //from http://cms.cern.ch/iCMS/jsp/db_notes/noteInfo.jsp?cmsnoteid=CMS%20AN-2017/329 
 
 	effgraph->SaveAs("output/effgraph.root");
-	accgraph->SaveAs("output/accgraph.root");
+	accF->SaveAs("output/accF.root");
 	xsecgraph->SaveAs("output/xsecgraph.root");
 
 	
 	//scale
-	double eps2scale = 0.1;//0.002; //this scales eps 0.02 -> 
+	double eps2scale = 1;//0.01;//1;//0.1;//0.002; //this scales eps 0.02 -> 
 
 	//*****----->>>>> nSignal = xsecgraph->Eval(mass)*eff*luminosity*acceptances[i]
 
@@ -138,7 +138,7 @@ void makeCardsAndWS(TString year="2017"){
 
    //LOOP OVER MASS INDICES AND MAKE THE CARDS/WORKSPACES
 	double mass = -1.;
-	TFile* f_ws = TFile::Open("../mass_calibration/pdfs.root", "READ");
+	TFile* f_ws = TFile::Open(("../mass_calibration/pdfs"+(string)year+".root").c_str(), "READ");
 	RooWorkspace *w = (RooWorkspace*)f_ws->Get("dpworkspace");
 	w->loadSnapshot("calibrated");
 	w->var("alpha1")->setConstant(true);//all this should actually be automatic. Check!!
@@ -234,7 +234,7 @@ void makeCardsAndWS(TString year="2017"){
 		bkg_model.plotOn(frame);
 		TCanvas c_all("c_all", "c_all", 800, 500);
 		frame->Draw("goff");
-		c_all.SaveAs(Form("output/catA%d"+year+".png",i));
+		c_all.SaveAs(Form("output/catA_%d_"+year+".png",i));
 
 		//save into ROO workspace
 		RooWorkspace dpworkspace("dpworkspace", "");
@@ -260,16 +260,16 @@ void makeCardsAndWS(TString year="2017"){
 		newcardShape << Form("process 		signalModel_generic  	bkg_mass	\n");
 		newcardShape << Form("process 		0    		1	   	\n");
 		newcardShape << Form("rate    		%f  		%f		\n",
-				     eps2scale*effcuts*effgraph->Eval(mass,0,"S")*luminosity, catA->Integral());
-		//eps2scale*xsecgraph->Eval(mass,0,"S")*effgraph->Eval(mass,0,"S")*luminosity*accgraph->Eval(mass,0,"S"), catA->Integral());
-		newcardShape << Form("lumi13TeV_2017 lnN 	1.023 	-\n");
-		newcardShape << Form("eff_mu_13TeV_2017 lnN	1.015 	-\n");
+				     //effcuts*effgraph->Eval(mass,0,"S")*luminosity, catA->Integral());
+				     effcuts*effgraph->Eval(mass,0,"S")*accF->Eval(mass)*luminosity, catA->Integral());
+					//eps2scale*xsecgraph->Eval(mass,0,"S")*effcuts*effgraph->Eval(mass,0,"S")*luminosity*accF->Eval(mass), catA->Integral());
+		//newcardShape << Form("lumi13TeV_2017 lnN 	1.023 	-\n");
+		//newcardShape << Form("eff_mu_13TeV_2017 lnN	1.015 	-\n");
 		//newcardShape << Form("bkg_norm rateParam CatA bkg_mass %f\n",catA->Integral());
 		//newcardShape << Form("resA param %f %f\n",resA.getValV(),resA.getValV()*0.1);
 		newcardShape.close();
 		
 	}
-	histChi2_A->SaveAs("output/histAchi2_"+year+".root");
 	f_ws->Close();
 
 }
