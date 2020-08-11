@@ -260,9 +260,7 @@ void makeCardsAndWS(TString year="2017"){
 		newcardShape << Form("process 		signalModel_generic  	bkg_mass	\n");
 		newcardShape << Form("process 		0    		1	   	\n");
 		newcardShape << Form("rate    		%f  		%f		\n",
-				     //effcuts*effgraph->Eval(mass,0,"S")*luminosity, catA->Integral());
-				     effcuts*effgraph->Eval(mass,0,"S")*accF->Eval(mass)*luminosity, catA->Integral());
-					//eps2scale*xsecgraph->Eval(mass,0,"S")*effcuts*effgraph->Eval(mass,0,"S")*luminosity*accF->Eval(mass), catA->Integral());
+				     effcuts*effgraph->Eval(mass,0,"S")*luminosity, catA->Integral());
 		//newcardShape << Form("lumi13TeV_2017 lnN 	1.023 	-\n");
 		//newcardShape << Form("eff_mu_13TeV_2017 lnN	1.015 	-\n");
 		//newcardShape << Form("bkg_norm rateParam CatA bkg_mass %f\n",catA->Integral());

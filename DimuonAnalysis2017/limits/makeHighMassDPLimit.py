@@ -57,13 +57,9 @@ for j in range(nbins_acc):
 accgraph = TGraph(nbins_acc,m_acceptances,acceptances);
 
 #THEO CROSS SECTION FOR EPS=0.02
-m		= array('d',[2.0,  3.0,  4.0,  5.0,  6.0,  7.0,  8.0,   9.0,   10.0,  12.5,  20.0])
-xSec	= array('d',[8541, 7514, 3323, 2055, 1422, 1043, 793.6, 621.1, 484.3, 292.8, 98.95])#[pb], model-dependent
-xsecgraph = TGraph(len(m),m,xSec);
 eps2scale = 1.
-base_eps = 0.02 #epsilon for which the cross sections are computed
 
-a = (base_eps**2)*eps2scale/sqrt(lumi_project/lumi) # for lumi projection (6.6->100)
+a = eps2scale/sqrt(lumi_project/lumi) # for lumi projection (6.6->100)
 
 files = glob("combine_output/"+year+"/higgsCombineasympMassIndex_*.AsymptoticLimits.mH*.root")
 
@@ -82,25 +78,24 @@ for d,m_fname in d_m:
 	#file90=glob.glob("higgsCombineIterV9_CL90_ForPress_2018_"+str(d)+".AsymptoticLimits.mH*.root")
 
 	acc = accgraph.Eval(m,0,"S")
-	xsec = xsecgraph.Eval(m,0,"S")
 
 	f=ROOT.TFile.Open(fname)
 	tree=f.Get("limit")
 	tree.GetEntry(2)
-	limit1.append(tree.limit*a/(acc*xsec))
+	limit1.append(tree.limit*a/(acc))
 
 	tree.GetEntry(0)
-	limit195up.append(abs(tree.limit*a/(acc*xsec)-limit1[-1]))
+	limit195up.append(abs(tree.limit*a/(acc)-limit1[-1]))
 	tree=f.Get("limit")
 	tree.GetEntry(4)
-	limit195down.append(abs(tree.limit*a/(acc*xsec)-limit1[-1]))
+	limit195down.append(abs(tree.limit*a/(acc)-limit1[-1]))
 	
 	
 	tree.GetEntry(1)
-	limit168up.append(abs(tree.limit*a/(acc*xsec)-limit1[-1]))
+	limit168up.append(abs(tree.limit*a/(acc)-limit1[-1]))
 	tree=f.Get("limit")
 	tree.GetEntry(3)
-	limit168down.append(abs(tree.limit*a/(acc*xsec)-limit1[-1]))
+	limit168down.append(abs(tree.limit*a/(acc)-limit1[-1]))
 		
 	mass.append(m)
 	masserr.append(0.)
@@ -237,5 +232,3 @@ leg2.SetFillColor(kWhite)
 #leg2.AddEntry( graph_limiteps290 , "Expected 90%",  "LP" )
 leg2.Draw("same")
 c2.SaveAs("thep.root")
-#gdpxsec.SaveAs("gdpxsec.root")
-#acctot.SaveAs("acctot.root")
