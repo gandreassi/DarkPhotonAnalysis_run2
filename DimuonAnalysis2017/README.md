@@ -27,3 +27,10 @@ python pyDPLimitsProcessing.py <year>
 <pre><code>
 python makeDPLimit_Xsec.py <year>
 </code></pre>
+for the limit on the cross section times BR
+or
+
+<pre><code>
+python makeDPLimit_Xsec.py <year>
+</code></pre>
+for the limit on eps^2. (ATTENTION: the cross sections used in this macro correspond to a specific model, to be checked!)
