@@ -14,7 +14,7 @@ make
 
 2) perform and store the fit to data
 <pre><code>
-cd limit
+cd limits
 ./makeCardsAndWS.exe 
 </code></pre>
 
