@@ -47,14 +47,14 @@ lumi_project = 100
 
 #ACCEPTANCE
 acc_file = TFile.Open("acceptances.root")
-acc_teff = acc_file.Get("cmsacc")
-nbins_acc = acc_teff.GetPassedHistogram().GetNbinsX()
-acceptances = array('d')
-m_acceptances = array('d')
-for j in range(nbins_acc):
-	acceptances.append(acc_teff.GetEfficiency(j+1))
-	m_acceptances.append(acc_teff.GetPassedHistogram().GetBinCenter(j+1))
-accgraph = TGraph(nbins_acc,m_acceptances,acceptances);
+acc_teff = acc_file.Get("fit_func")
+#nbins_acc = acc_teff.GetPassedHistogram().GetNbinsX()
+#acceptances = array('d')
+#m_acceptances = array('d')
+#for j in range(nbins_acc):
+#	acceptances.append(acc_teff.GetEfficiency(j+1))
+#	m_acceptances.append(acc_teff.GetPassedHistogram().GetBinCenter(j+1))
+#accgraph = TGraph(nbins_acc,m_acceptances,acceptances);
 
 #THEO CROSS SECTION FOR EPS=0.02
 eps2scale = 1.
@@ -77,7 +77,7 @@ for d,m_fname in d_m:
 	m, fname = m_fname
 	#file90=glob.glob("higgsCombineIterV9_CL90_ForPress_2018_"+str(d)+".AsymptoticLimits.mH*.root")
 
-	acc = accgraph.Eval(m,0,"S")
+	acc = acc_teff.Eval(m)
 
 	f=ROOT.TFile.Open(fname)
 	tree=f.Get("limit")
