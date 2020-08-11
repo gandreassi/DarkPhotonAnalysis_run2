@@ -22,3 +22,8 @@ cd limits
 <pre><code>
 python pyDPLimitsProcessing.py <year>
 </code></pre>
+
+4) run the plotting macro
+<pre><code>
+python makeHighMassDPLimit.py <year>
+</code></pre>
