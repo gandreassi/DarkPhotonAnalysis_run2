@@ -14,11 +14,16 @@ make
 
 2) perform and store the fit to data
 <pre><code>
-cd limit
+cd limits
 ./makeCardsAndWS.exe 
 </code></pre>
 
 3) run the combine tool, computing the mass-dependent limit
 <pre><code>
 python pyDPLimitsProcessing.py <year>
+</code></pre>
+
+4) run the plotting macro
+<pre><code>
+python makeHighMassDPLimit.py <year>
 </code></pre>
