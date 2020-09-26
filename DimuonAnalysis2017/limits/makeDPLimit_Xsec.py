@@ -47,23 +47,19 @@ lumi_project = 100
 
 #ACCEPTANCE
 acc_file = TFile.Open("acceptances.root")
-acc_teff = acc_file.Get("cmsacc")
-nbins_acc = acc_teff.GetPassedHistogram().GetNbinsX()
-acceptances = array('d')
-m_acceptances = array('d')
-for j in range(nbins_acc):
-	acceptances.append(acc_teff.GetEfficiency(j+1))
-	m_acceptances.append(acc_teff.GetPassedHistogram().GetBinCenter(j+1))
-accgraph = TGraph(nbins_acc,m_acceptances,acceptances);
+acc_teff = acc_file.Get("fit_func")
+#nbins_acc = acc_teff.GetPassedHistogram().GetNbinsX()
+#acceptances = array('d')
+#m_acceptances = array('d')
+#for j in range(nbins_acc):
+#	acceptances.append(acc_teff.GetEfficiency(j+1))
+#	m_acceptances.append(acc_teff.GetPassedHistogram().GetBinCenter(j+1))
+#accgraph = TGraph(nbins_acc,m_acceptances,acceptances);
 
 #THEO CROSS SECTION FOR EPS=0.02
-m		= array('d',[2.0,  3.0,  4.0,  5.0,  6.0,  7.0,  8.0,   9.0,   10.0,  12.5,  20.0])
-xSec	= array('d',[8541, 7514, 3323, 2055, 1422, 1043, 793.6, 621.1, 484.3, 292.8, 98.95])#[pb], model-dependent
-xsecgraph = TGraph(len(m),m,xSec);
 eps2scale = 1.
-base_eps = 0.02 #epsilon for which the cross sections are computed
 
-a = (base_eps**2)*eps2scale/sqrt(lumi_project/lumi) # for lumi projection (6.6->100)
+a = eps2scale/sqrt(lumi_project/lumi) # for lumi projection (6.6->100)
 
 files = glob("combine_output/"+year+"/higgsCombineasympMassIndex_*.AsymptoticLimits.mH*.root")
 
@@ -81,26 +77,25 @@ for d,m_fname in d_m:
 	m, fname = m_fname
 	#file90=glob.glob("higgsCombineIterV9_CL90_ForPress_2018_"+str(d)+".AsymptoticLimits.mH*.root")
 
-	acc = accgraph.Eval(m,0,"S")
-	xsec = xsecgraph.Eval(m,0,"S")
+	acc = acc_teff.Eval(m)
 
 	f=ROOT.TFile.Open(fname)
 	tree=f.Get("limit")
 	tree.GetEntry(2)
-	limit1.append(tree.limit*a/(acc*xsec))
+	limit1.append(tree.limit*a/(acc))
 
 	tree.GetEntry(0)
-	limit195up.append(abs(tree.limit*a/(acc*xsec)-limit1[-1]))
+	limit195up.append(abs(tree.limit*a/(acc)-limit1[-1]))
 	tree=f.Get("limit")
 	tree.GetEntry(4)
-	limit195down.append(abs(tree.limit*a/(acc*xsec)-limit1[-1]))
+	limit195down.append(abs(tree.limit*a/(acc)-limit1[-1]))
 	
 	
 	tree.GetEntry(1)
-	limit168up.append(abs(tree.limit*a/(acc*xsec)-limit1[-1]))
+	limit168up.append(abs(tree.limit*a/(acc)-limit1[-1]))
 	tree=f.Get("limit")
 	tree.GetEntry(3)
-	limit168down.append(abs(tree.limit*a/(acc*xsec)-limit1[-1]))
+	limit168down.append(abs(tree.limit*a/(acc)-limit1[-1]))
 		
 	mass.append(m)
 	masserr.append(0.)
@@ -162,10 +157,10 @@ mg.Add(graph_limit1,"pl")
 
 mg.Draw("APC")
 mg.GetXaxis().SetRangeUser(1.2,9.)
-mg.GetYaxis().SetRangeUser(5e-7,1e-2)
+mg.GetYaxis().SetRangeUser(0.1,50)
 #mg.GetYaxis().SetTitle("xSec*BR [pb]")
 #mg.GetXaxis().SetTitle("Dark Photon Mass [GeV]")
-mg.GetYaxis().SetTitle("#epsilon^{2}")
+mg.GetYaxis().SetTitle("#sigma(pp#rightarrow A)#times BR(A#rightarrow #mu#mu)[pb]")
 mg.GetYaxis().SetTitleOffset(0.9)
 mg.GetYaxis().SetTitleSize(0.05)
 mg.GetXaxis().SetTitle("Dark Photon Mass [GeV]")
@@ -195,47 +190,18 @@ leg.AddEntry( graph_limit1 , "Expected",  "LP" )
 leg.AddEntry( graph_limit68up, "#pm 1#sigma",  "F" ) 
 leg.AddEntry( graph_limit95up, "#pm 2#sigma",  "F" ) 
 leg.Draw("same")
-c1.SaveAs("limit"+year+"DarkPhoton_eps2.root")
-c1.SaveAs("limit"+year+"DarkPhoton_eps2.pdf")
+c1.SaveAs("limit"+year+"DarkPhoton.root")
+c1.SaveAs("limit"+year+"DarkPhoton.pdf")
 c2=ROOT.TCanvas("c2","c2",700,500)
 c2.SetLogy()
-# graph_limiteps2=ROOT.TGraph(len(mass),mass,limiteps2)
-# graph_limiteps2.SetTitle("")
-# graph_limiteps2.Draw("ALP")
-# graph_limiteps290=ROOT.TGraph(len(mass),mass,limiteps290)
-# graph_limiteps290.SetTitle("")
-# graph_limiteps290.Draw("ALP")
 
 cmsTag.Draw()
 cmsTag2.Draw()
 cmsTag3.Draw()
-# graph_limiteps2.SetMarkerSize(1)
-# graph_limiteps2.SetMarkerStyle(20)
-# graph_limiteps2.SetMarkerColor(kBlack)
-# graph_limiteps2.SetLineWidth(2)
-# graph_limiteps2.SetLineStyle(7)
-# graph_limiteps2.SetLineColor(kBlue)
-# graph_limiteps2.GetYaxis().SetRangeUser(0.0000001,0.0002)
-# graph_limiteps2.GetXaxis().SetRangeUser(10,70)
-# graph_limiteps2.GetYaxis().SetTitle("#epsilon^{2}")
-# graph_limiteps2.GetYaxis().SetTitleSize(0.05)
-# graph_limiteps2.GetXaxis().SetTitle("Dark Photon Mass [GeV]")
-# graph_limiteps290.SetMarkerSize(1)
-# graph_limiteps290.SetMarkerStyle(20)
-# graph_limiteps290.SetMarkerColor(kGray)
-# graph_limiteps290.SetLineWidth(2)
-# graph_limiteps290.SetLineStyle(7)
-# graph_limiteps290.SetLineColor(kRed)
-# mgeps.Add(graph_limiteps2,"pl")
-# mgeps.Add(graph_limiteps290,"pl")
 mgeps.Draw("APC")
 leg2=ROOT.TLegend(0.65, 0.65,0.87, 0.85)  
 leg2.SetBorderSize( 0 )
 leg2.SetFillStyle( 1001 )
 leg2.SetFillColor(kWhite) 
-# leg2.AddEntry( graph_limiteps2 , "Expected 95%",  "LP" )
-#leg2.AddEntry( graph_limiteps290 , "Expected 90%",  "LP" )
 leg2.Draw("same")
 c2.SaveAs("thep.root")
-#gdpxsec.SaveAs("gdpxsec.root")
-#acctot.SaveAs("acctot.root")

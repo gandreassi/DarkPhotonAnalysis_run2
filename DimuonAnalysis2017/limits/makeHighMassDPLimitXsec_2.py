@@ -9,8 +9,7 @@ from ROOT import *
 from operator import truediv
 import random
 import math
-from glob import glob
-import re 
+import glob
 
 fff = open("eps2.txt", "w")
 
@@ -46,27 +45,21 @@ m=0.2
 #make the loop
 
 #a=10#1./0.1143
-a = (0.1)/5 #the factor 5 is for lumi (4->100)
+a = (0.02**2)/5 #the factor 5 is for lumi (4->100)
 
+for d in range(0,400):
+	
+	m=m+(m*0.01)
+	#print m
+	#print d
 
-files = glob("higgsCombineasympMassIndex_*.AsymptoticLimits.mH*.root")
+	file=glob.glob("higgsCombineasympMassIndex_"+str(d)+".AsymptoticLimits.mH*.root")
+	if len(file)==0:
+		continue
 
-d_m = {}
-for fname in files:
-        m = float(re.search(r"mH(\d+\.?\d+).root", fname).group(1))
-        d = int(re.search(r"Index_(\d+).Asymptotic", fname).group(1))
-	d_m[d] = m
-
-print d_m
-d_m = sorted(d_m.items())
-print d_m
-
-for d,m in d_m:
-	fname="higgsCombineasympMassIndex_{0}.AsymptoticLimits.mH{1}.root".format(d,m)
-	print m, d
 	#file90=glob.glob("higgsCombineIterV9_CL90_ForPress_2017_"+str(d)+".AsymptoticLimits.mH*.root")
 
-	f=ROOT.TFile.Open(fname)
+	f=ROOT.TFile.Open(file[0])
 	tree=f.Get("limit")
 	tree.GetEntry(2)
 	limit1.append(tree.limit*a)
@@ -80,6 +73,7 @@ for d,m in d_m:
 	# limiteps2.append((float(tree.limit)/float(dpxsecpred))*0.0004)
 	# limiteps290.append((float(tree90.limit)/float(dpxsecpred))*0.0004)
 
+	tree=f.Get("limit")
 	tree.GetEntry(0)
 	limit195up.append(abs(tree.limit*a-limit1[-1]))
 	tree=f.Get("limit")
@@ -156,10 +150,10 @@ mg.Add(graph_limit1,"pl")
 
 mg.Draw("APC")
 mg.GetXaxis().SetRangeUser(1.2,9.)
-mg.GetYaxis().SetRangeUser(5e-2,5)
+mg.GetYaxis().SetRangeUser(1e-9,1e-1)
 #mg.GetYaxis().SetTitle("xSec*BR [pb]")
 #mg.GetXaxis().SetTitle("Dark Photon Mass [GeV]")
-mg.GetYaxis().SetTitle("#sigma(pp#rightarrow A)#times BR(A#rightarrow #mu#mu)[pb]")
+mg.GetYaxis().SetTitle("#epsilon^{2}")
 mg.GetYaxis().SetTitleOffset(0.9)
 mg.GetYaxis().SetTitleSize(0.05)
 mg.GetXaxis().SetTitle("Dark Photon Mass [GeV]")
